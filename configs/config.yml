@@ -1,0 +1,23 @@
+# 知识图谱模块
+
+# 添加目标表  {}
+add_mbb:
+  api: target_tables?isFrontend=true
+  method: post
+
+# 删除目标表 {} 需要传入frontendEntityId frontend_entity_id
+delete_mbb:
+  api: /target_tables/frontend?frontendEntityId={}
+  method: delete
+
+# 修改目标表 {} 需要传入目标表id  target_table_id
+update_mbb:
+  api: /target_tables/{}?isFrontend=true
+  method: put
+
+# 获取所有的目标表数据
+select_mbb:
+  api: /target_tables?isFrontend=true
+  method: get
+
+

@@ -1,7 +1,6 @@
-#coding=utf-8
-# __autor__='wyxces'
-
-
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# @Author  : wyx
 
 """
 本模块的接口规范如下：
@@ -12,7 +11,7 @@ data 默认是None  ,用于传入 get的param参数 或者 post 的 data/json �
 base_url 默认值为 config文件中配置的 [HTTP].cona_url  ,选填
 content_type 默认是None ,选填  不需要传utf-8
 timeout 默认值为5  ,选填
-header  默认是{} ,建议传入 Cookie和content-tyoe外的请求头信息
+header  默认是None ,选填，建议传入 Cookie和content-type外的请求头信息
 
 返回:
 如数据校验不通过 或 请求出现错误 则返回 False , 正常请求返回 response信息  (如 方法错误,api格式不符合要求,content_tyoe 错误)
@@ -23,19 +22,18 @@ header  默认是{} ,建议传入 Cookie和content-tyoe外的请求头信息
         print('res 返回 false 用例失败')
 """
 
+from configs.config_wyx import projectConf
+from common.common.logger_wyx import log
+
 import re
-import json
 import requests
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from configs.read_configini import baseConf, projectConf
-from common.logger_wyx import log
-
 
 class RequestWyx:
     def __init__(self):
-        self.base_url = projectConf.base_url
+        self.__base_url = projectConf.base_url
         self.content_type_list = ["text/html", "text/plain", "text/xml", "image/gif", "image/jpeg", "image/png",
                                   "application/xhtml+xml", "application/xml", "application/atom+xml",
                                   "application/json", "application/pdf", "application/msword",
@@ -43,36 +41,36 @@ class RequestWyx:
                                   "multipart/form-data"]
 
     def request_wyx(self, method, api='', data=None, base_url=None,
-                     content_type=None, timeout=5, headers={}, **kwargs):
-        log.debug('调用request_wyx方法，传入参数method-{}, api-{}, data-{}, base_url-{}, content_type-{}, '
-                     'headers-{}'.format(method, api, data, base_url, content_type, headers))
-
-        # 数据提前处理  包括大小写转换 和 base_url的确定
+                    content_type=None, timeout=5, headers=None, **kwargs):
+        log.debug('调用request_wyx方法，传入参数：method:{}, api:{}, base_url:{}, content_type:{}, headers:{}, data:{}'.
+                  format(method, api, base_url, content_type, headers, data))
+        # 数据处理  包括大小写转换 和 base_url的确定
         method = method.lower()
-        if content_type is not None:
-            content_type = content_type.lower()
-        if base_url is None:
-            base_url = self.base_url
+        content_type = content_type.lower() if content_type is not None else content_type
+        base_url = self.__base_url if base_url is None else base_url
 
         # 数据校验 如果不通过，直接返回 False
-        data_check_dict = {
+        __data_check_dict = {
             'method': method,
             'url': [base_url, api],
             'content_type': content_type
         }
-        log.info('开始校验入参数据，待校验内容：{}'.format(data_check_dict))
-        if self.data_check(data_check_dict):
+        log.info('开始校验入参数据，待校验内容：{}'.format(__data_check_dict.keys()))
+        if self.__data_check(__data_check_dict):
             log.info('数据校验失败，返回False')
             return False
 
         # 参数组装 url 和 header
         url = base_url + api
-        header = {'Cookie': "JSESSIONID={}".format(projectConf.get_pro_jsessionid())}
+        header = {'Cookie': "JSESSIONID={}".format(projectConf.get_pro_jsessionid()),
+                  'Connection': 'keep-alive'
+                  }
         if content_type is not None:  # 如果存在content_type 则组装到header中
             if 'charset' not in content_type:  # 如果没传默认字符集 才添加charset为utf-8
                 content_type = content_type + ';charset=UTF-8'
             header['Content-Type'] = content_type
-        header.update(headers)
+        if headers is not None:
+            header.update(headers)
         r_dict = {
             'headers': header,
             'verify': False,
@@ -81,8 +79,8 @@ class RequestWyx:
         r_dict.update(kwargs)
 
         # 根据method判断调用哪个方法
-        log.info("开始匹配request方法：\n\t请求方式为：{}\n\turl:{}\n\tdata:{}\n\tdict:{}".
-                    format(method, url, data, r_dict))
+        # log.info("开始匹配request方法：\n\t请求方式为：{}\n\turl:{}\n\tdata:{}\n\tdict:{}".format(method, url, data, r_dict))
+        log.info("开始匹配request方法，请求方式为：{}".format(method))
         if method == 'get':
             log.info('method 匹配=get')
             return self.__get_(url=url, param=data, **r_dict)
@@ -100,78 +98,76 @@ class RequestWyx:
             return self.__request_(method=method, url=url, data=data, **r_dict)
 
     def __get_(self, url, param, **kwargs):
-        log.info("开始执行get 方法")
+        log.info("开始执行request方法：\n\tget url:{}\n\tparam:{}\n\tdict:{}".format(url, param, kwargs))
         try:
             res = requests.get(url=url, params=param, **kwargs)
-            if self.response_check(res):
-                return res
-        except BaseException as msg:
+        except Exception as msg:
             log.error('request get请求异常：{}'.format(msg))
             raise
-        return False
+        else:
+            return res if self.__response_check(res) else False
 
     def __post_(self, url, data, **kwargs):
-        log.info("开始执行post 方法")
-        log.debug("** keywargs:", kwargs)
+        log.info("开始执行request方法：\n\tpost url:{}\n\tdata:{}\n\tkwargs:{}".format(url, data, kwargs))
+        res = False
         try:
             if 'Content-Type' in kwargs['headers'].keys():
+                # log.debug("\n\t |\n\t if 'Content-Type' in kwargs['headers'].keys(): |\n\t")
                 if 'json' in kwargs['headers']['Content-Type'] and data is not None:
-                    data = json.dump(data)
-            res = requests.post(url=url, data=data, **kwargs)
-            if self.response_check(res):
-                return res
-        except BaseException as msg:
+                    # log.debug("\n\t |\n\t if 'json' in kwargs['headers']['Content-Type'] and data is not None: |\n\t")
+                    res = requests.post(url=url, json=data, **kwargs)
+            else:
+                res = requests.post(url=url, data=data, **kwargs)
+        except Exception as msg:
             log.error('request post请求异常：{}'.format(msg))
             raise
-        return False
+        else:
+            return res if self.__response_check(res) else False
 
     def __delete_(self, url, data, **kwargs):
-        log.info("开始执行delete 方法")
+        log.info("开始执行request方法：\n\tdelete url:{}\n\tdata:{}\n\tkwargs:{}".format(url, data, kwargs))
         try:
             res = requests.delete(url=url, data=data, **kwargs)
-            if self.response_check(res):
-                return res
-        except BaseException as msg:
+        except Exception as msg:
             log.error('request delete请求异常：{}'.format(msg))
             raise
-        return False
+        else:
+            return res if self.__response_check(res) else False
 
     def __put_(self, url, data, **kwargs):
-        log.info("开始执行 put 方法")
+        log.info("开始执行request方法：\n\tput url:{}\n\tdata:{}\n\tkwargs:{}".format(url, data, kwargs))
         try:
             res = requests.put(url=url, data=data, **kwargs)
-            if self.response_check(res):
-                return res
-        except BaseException as msg:
+        except Exception as msg:
             log.error('request put请求异常：{}'.format(msg))
             raise
-        return False
+        else:
+            return res if self.__response_check(res) else False
 
     def __request_(self, method, url, data, **kwargs):
-        log.info("开始执行 requests.{}方法".format(method))
+        log.info("开始执行 requests.{}方法：\n\turl:{}\n\tdata:{}\n\tkwargs:{}".format(method, url, data, kwargs))
         try:
             res = requests.request(method=method, url=url, data=data, **kwargs)
-            if self.response_check(res):
-                return res
-        except BaseException as msg:
+        except Exception as msg:
             log.error('request {} 请求异常：{}'.format(method, msg))
             raise
-        return False
+        else:
+            return res if self.__response_check(res) else False
 
     # 入参数据校验
-    def data_check(self, molds):
+    def __data_check(self, molds):
         for key, value in molds.items():
-
             if key == 'method':
                 log.info('开始校验 method:{}'.format(value))
                 if value not in ['get', 'post', 'put', 'delete']:
-                    log.warning("请求方法：{},不在预处理['get', 'post', 'put', 'delete']列表中,"
-                                   "requests方法执行后可能报错!!!".format(value))
-
+                    log.warning("请求方法：{},不在预处理['get', 'post', 'put', 'delete']列表中,requests方法执行后可能报错!!!".format(value))
             if key == 'url':
-                log.info('开始校验 url: base_url={},api={}'.format(value[0], value[1]))
+                log.info('开始校验 url [ base_url={},api={} ]'.format(value[0], value[1]))
                 if value[1] == '':
                     continue
+                elif re.findall('//', value[1]):
+                    log.error('api 格式错误,不应该存在 //')
+                    return True
                 if re.search("/$", value[0]):
                     log.debug('base_url 末尾匹配到/')
                     if re.match('/', value[1]):
@@ -181,7 +177,6 @@ class RequestWyx:
                 elif not re.match('/', value[1]):
                     log.error('base_url末尾无/, api:{}格式错误,未以/开头，无法拼接'.format(value[1]))
                     return True
-
             if key == 'content_type':
                 log.info('开始校验 content_type:{}'.format(value))
                 if value is None:
@@ -189,10 +184,7 @@ class RequestWyx:
                 if value == '':
                     log.warning('content_type 为 "" ,可能会引发错误')
                 else:
-                    if re.search('charset', value):
-                        log.debug('charset-{}'.format(value))
-                        value = value.split(';')[0]
-                        log.debug('value{}'.format(value))
+                    value = value.split(';')[0] if re.search('charset', value) else value
                     if value not in self.content_type_list:
                         log.error('content_type:{} 不在已知道列表,当前程序无法解析!!!'.format(value))
                         return True
@@ -200,14 +192,15 @@ class RequestWyx:
         return False
 
     # response返回数据校验
-    def response_check(self, res):
-        log.info('request请求结束,response_check开始对response做校验')
+    @staticmethod
+    def __response_check(res):
+        log.info('request请求结束,__response_check开始对response做校验')
         try:
-            log.info('数据请求正确response 数据为:{}'.format(res.content))
+            log.info('response返回数据正确:\n\tstatus_code:{}, content 为:{}'.format(res.status_code, res.content))
         except AttributeError as msg:
-            log.error('response返回异常,返回数据无 content属性:{}'.format(msg))
+            log.error('response返回异常,返回数据无content属性:{}'.format(msg))
             raise
-        except BaseException as msg:
+        except Exception as msg:
             log.error('response返回异常：{}'.format(msg))
             raise
         else:
@@ -218,4 +211,5 @@ requestWyx = RequestWyx()
 if __name__ == '__main__':
     wyx = RequestWyx()
     # url = projectConf.base_url
-    res = wyx.request_wyx(method='get', api='')
+    res_ = wyx.request_wyx(method='get', api='')
+    log.debug(res_)
