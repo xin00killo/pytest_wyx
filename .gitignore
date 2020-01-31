@@ -129,6 +129,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-reports/
+
 wyx_unittest/
 /test_cases/22test_testing22.py
+/logs/.gitkeep
+/reports/.gitkeep
