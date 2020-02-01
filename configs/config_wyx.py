@@ -98,6 +98,21 @@ class LogConf:
         conf.set_conf_file('log', option, value)
 
 
+@singleton
+class MysqlConf:
+    def __init__(self):
+        self.__cf = conf.get_conf()
+        self.host = self.get_value('host')
+        self.port = eval(self.get_value('port'))
+        self.user = self.get_value('user')
+        self.pwd = self.get_value('pwd')
+        self.db = self.get_value('db')
+        self.charset = self.get_value('charset')
+
+    def get_value(self, option):
+        return self.__cf.get('mysql', option)
+
+
 # 读取yaml文件
 class GetYaml:
     def __init__(self, path=None, param=None):
@@ -118,6 +133,7 @@ conf = Conf()
 baseConf = BaseConf()
 projectConf = ProjectConf()
 logConf = LogConf()
+mysqlConf = MysqlConf()
 yamlConf = GetYaml()  # 读取系统配置的yaml的方法
 
 

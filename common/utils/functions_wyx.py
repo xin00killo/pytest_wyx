@@ -26,10 +26,9 @@ import json
 from configs.config_wyx import baseConf
 from common.common.logger_wyx import log
 
-
+# 获取全路径的方法
 def get_abspath(relative_path):
     """
-    # 获取全路径的方法
     :param relative_path:
     :return: str  全路径
     """
@@ -247,6 +246,15 @@ def has_key_get_value(str_, key, loop=0, condition=None):
     return result
 
 
+# 获取字典列表中某元素的value组成的list  如：mysql查询结果字典列表
+def get_element_list(data_list, element_key):
+    element_list = []
+    for data in data_list:
+        element_list.append(data[element_key])
+    return element_list
+
+
+# 对字典/映射的操作
 class JsonOps:
     def __init__(self, str_=None, json_file=None):
         """
@@ -292,17 +300,6 @@ class JsonOps:
         str_ = self.str_ if str_ is None else str_
         result = has_key_get_value(str_=str_, key=key, loop=loop, condition=condition)[1]
         return result
-
-    # 返回复杂json串儿中某个key的值
-    def get_value(self, str_=None, key='message', loop=0, condition=None):
-        """
-        :param str_: 默认值None时取值self.str_， 如果需要查找其他key 则需传入
-        :param key: 默认 message， 如果需要查找其他key 则需传入
-        :param loop: 默认为0，只判断第一层的数据，如果为其他值，则循环判断最多loop次数或查找到符合条件的key
-        :param condition: 默认没有条件， 此参数适用于当多个子串中都包含某个key时，使用同级别子串儿来判断当前key是否满足条件
-                        参数规范： {key1:value1, key2:value2}
-        :return: key对应的value值
-        """
 
 
 if __name__ == '__main__':

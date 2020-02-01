@@ -131,4 +131,4 @@ dmypy.json
 
 
 wyx_unittest/
-/test_cases/22test_testing22.py
+/reports/allure_html/
