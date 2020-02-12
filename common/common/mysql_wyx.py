@@ -33,10 +33,10 @@ class MysqlWyx:
             log.info('mysql 数据库连接池初始化')
             __pool = PooledDB(
                 creator=pymysql,  # 使用链接数据库的模块
-                mincached=1,  # 初始化时，链接池中至少创建的空闲的链接，0表示不创建
-                maxcached=1,  # 链接池中最多闲置的链接，0和None不限制
-                maxconnections=8,  # 连接池允许的最大连接数，0和None表示不限制连接数
-                blocking=True,  # 连接池中如果没有可用连接后，是否阻塞等待。True，等待；False，不等待然后报错
+                mincached=mysqlConf.mincached,  # 初始化时，链接池中至少创建的空闲的链接，0表示不创建
+                maxcached=mysqlConf.maxcached,  # 链接池中最多闲置的链接，0和None不限制
+                maxconnections=mysqlConf.maxconnections,  # 连接池允许的最大连接数，0和None表示不限制连接数
+                blocking=mysqlConf.blocking,  # 连接池中如果没有可用连接后，是否阻塞等待。True，等待；False，不等待然后报错
                 host=mysqlConf.host,
                 port=mysqlConf.port,
                 user=mysqlConf.user,
@@ -183,7 +183,7 @@ class MysqlWyx:
 
 if __name__ == '__main__':
     db = MysqlWyx()
-    sql_str = 'select * from belong_db'
+    sql_str = sql_str = 'select target_table_id from target_table'
     sql_str2 = 'select * from target_attr'
     result0 = db.select_all(sql_str)
     print(type(result0), result0)
@@ -199,4 +199,8 @@ if __name__ == '__main__':
     print(type(result4), result4)
     print(str(result4))
     db2.dispose()
+    db.end()
+    db.end()
     db.dispose()
+    for id in result3:
+        print(id[0])

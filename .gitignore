@@ -131,4 +131,5 @@ dmypy.json
 
 
 wyx_unittest/
-/reports/allure_html/
+/reports/
+!/reports/.gitkeep

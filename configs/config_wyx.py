@@ -18,7 +18,7 @@ class Conf:
         self.__base_path = re.search(".*pytest_wyx", os.getcwd())[0]  # 获取根目录信息
         self.__conf_path = os.path.join(self.__base_path, r'configs/config.ini')  # 文件路径
         self.__conf = configparser.ConfigParser()
-        self.__conf.read(self.__conf_path, encoding="utf-8-sig")  # 读取文件
+        self.__conf.read(self.__conf_path)  # 读取文件
         self.set_conf_file('base', 'base_path', self.__base_path)  # 首次调用config时存储跟目录信息
 
     # 设置config文件的方法
@@ -38,6 +38,8 @@ class BaseConf:
         self.__cf = conf.get_conf()
         self.base_path = self.get_value('base_path')  # 获取跟目录信息
         self.log_num = eval(self.get_value('log_num'))
+        self.testers = self.get_value('testers')
+        self.department = self.get_value('department')
 
     def get_value(self, option):
         return self.__cf.get('base', option)
@@ -79,7 +81,6 @@ class LogConf:
         self.relative_path = self.get_value('relative_path')
         self.log_path = os.path.join(baseConf.base_path, self.relative_path)
         self.max_bytes_each = eval(self.get_value('max_bytes_each'))
-        # print('self.max_bytes_each', self.max_bytes_each, type(self.max_bytes_each))
         self.backup_count = eval(self.get_value('backup_count'))
         self.fmt_logfile = self.get_value('fmt_logfile')
         self.fmt_console = self.get_value('fmt_console')
@@ -93,10 +94,6 @@ class LogConf:
     def get_value(self, option):
         return self.__cf.get('log', option)
 
-    @staticmethod
-    def __set_value(option, value):
-        conf.set_conf_file('log', option, value)
-
 
 @singleton
 class MysqlConf:
@@ -108,22 +105,47 @@ class MysqlConf:
         self.pwd = self.get_value('pwd')
         self.db = self.get_value('db')
         self.charset = self.get_value('charset')
+        self.mincached = eval(self.get_value('mincached'))
+        self.maxcached = eval(self.get_value('maxcached'))
+        self.maxconnections = eval(self.get_value('maxconnections'))
+        self.blocking = self.get_value('blocking')
 
     def get_value(self, option):
         return self.__cf.get('mysql', option)
 
 
+@singleton
+class EmailConf:
+    def __init__(self):
+        self.__cf = conf.get_conf()
+        self.host = self.get_value('host')
+        self.port = eval(self.get_value('port'))
+        self.user = self.get_value('user')
+        self.pwd = self.get_value('pwd')
+        self.sender = self.get_value('sender')
+        self.receivers = self.get_value('receivers')
+        self.cc = self.get_value('cc')
+        self.bcc = self.get_value('bcc')
+        self.subject = self.get_value('subject')
+        self.test_user = self.get_value('test_user')
+        self.content = self.get_value('content')
+        self.on_off = eval(self.get_value('on_off'))
+        self.add_dist_log = eval(self.get_value('add_dist_log'))
+
+    def get_value(self, option):
+        return self.__cf.get('email', option)
+
+
 # 读取yaml文件
-class GetYaml:
-    def __init__(self, path=None, param=None):
-        yaml_path = os.path.join(baseConf.base_path, r'configs/config.yml')
-        self.path = path if path is not None else yaml_path  # 文件路径
+class YamlConf:
+    def __init__(self, relative_path=None):
+        self.path = os.path.join(baseConf.base_path, relative_path)
 
     # 获取yaml文件中的数据
     def get_data(self, key=None):
         with open(self.path, 'r',  encoding="utf-8") as f:
             cf = yaml.load(f, Loader=yaml.FullLoader)
-        if key is None: # 读取信息的key,不传默认获取所有数据
+        if key is None:  # 读取信息的key,不传默认获取所有数据
             return cf  # 返回所有数据
         else:
             return cf.get(key)  # 获取键为key的值
@@ -134,7 +156,7 @@ baseConf = BaseConf()
 projectConf = ProjectConf()
 logConf = LogConf()
 mysqlConf = MysqlConf()
-yamlConf = GetYaml()  # 读取系统配置的yaml的方法
+emailConf = EmailConf()
 
 
 if __name__ == '__main__':
@@ -143,3 +165,4 @@ if __name__ == '__main__':
     projectConf.set_pro_jsessionid('1223ss4')
     print('2:', projectConf.get_pro_jsessionid())
     print('log_path 信息', logConf.log_path)
+    print('content', emailConf.content)

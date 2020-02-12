@@ -1,7 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # @Author  : wyx
+from common.common.singleton_wyx import singleton
+from configs.config_wyx import projectConf
+from common.common.logger_wyx import log
 
+import re
+import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 """
 本模块的接口规范如下：
 request_wyx(self, method, api='', data=None, base_url=None, content_type=None, timeout=5, **kwargs)
@@ -22,15 +29,8 @@ header  默认是None ,选填，建议传入 Cookie和content-type外的请求�
         print('res 返回 false 用例失败')
 """
 
-from configs.config_wyx import projectConf
-from common.common.logger_wyx import log
 
-import re
-import requests
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-
+@singleton
 class RequestWyx:
     def __init__(self):
         self.__base_url = projectConf.base_url
@@ -41,7 +41,7 @@ class RequestWyx:
                                   "multipart/form-data"]
 
     def request_wyx(self, method, api='', data=None, base_url=None,
-                    content_type=None, timeout=5, headers=None, **kwargs):
+                    content_type=None, timeout=50, headers=None, **kwargs):
         log.debug('调用request_wyx方法，传入参数：method:{}, api:{}, base_url:{}, content_type:{}, headers:{}, data:{}'.
                   format(method, api, base_url, content_type, headers, data))
         # 数据处理  包括大小写转换 和 base_url的确定
@@ -103,8 +103,9 @@ class RequestWyx:
             res = requests.get(url=url, params=param, **kwargs)
         except Exception as msg:
             log.error('request get请求异常：{}'.format(msg))
-            raise
+            return False
         else:
+            log.info('res')
             return res if self.__response_check(res) else False
 
     def __post_(self, url, data, **kwargs):
@@ -120,7 +121,7 @@ class RequestWyx:
                 res = requests.post(url=url, data=data, **kwargs)
         except Exception as msg:
             log.error('request post请求异常：{}'.format(msg))
-            raise
+            return False
         else:
             return res if self.__response_check(res) else False
 
@@ -130,7 +131,7 @@ class RequestWyx:
             res = requests.delete(url=url, data=data, **kwargs)
         except Exception as msg:
             log.error('request delete请求异常：{}'.format(msg))
-            raise
+            return False
         else:
             return res if self.__response_check(res) else False
 
@@ -140,7 +141,7 @@ class RequestWyx:
             res = requests.put(url=url, data=data, **kwargs)
         except Exception as msg:
             log.error('request put请求异常：{}'.format(msg))
-            raise
+            return False
         else:
             return res if self.__response_check(res) else False
 
@@ -150,7 +151,7 @@ class RequestWyx:
             res = requests.request(method=method, url=url, data=data, **kwargs)
         except Exception as msg:
             log.error('request {} 请求异常：{}'.format(method, msg))
-            raise
+            return False
         else:
             return res if self.__response_check(res) else False
 
@@ -194,15 +195,16 @@ class RequestWyx:
     # response返回数据校验
     @staticmethod
     def __response_check(res):
-        log.info('request请求结束,__response_check开始对response做校验')
+        log.info('request请求结束, response_check开始对response做校验')
         try:
-            log.info('response返回数据正确:\n\tstatus_code:{}, content 为:{}'.format(res.status_code, res.content))
+            log.info('response返回数据正确:\n\tstatus_code:{}, content 为:{}'.format(
+                res.status_code, res.content))
         except AttributeError as msg:
             log.error('response返回异常,返回数据无content属性:{}'.format(msg))
-            raise
+            return False
         except Exception as msg:
             log.error('response返回异常：{}'.format(msg))
-            raise
+            return False
         else:
             return True
 
