@@ -128,7 +128,7 @@ class EmailConf:
         self.bcc = self.get_value('bcc')
         self.subject = self.get_value('subject')
         self.test_user = self.get_value('test_user')
-        self.content = self.get_value('content')
+        self.content = self.get_value('content').format('\t')
         self.on_off = eval(self.get_value('on_off'))
         self.add_dist_log = eval(self.get_value('add_dist_log'))
 
