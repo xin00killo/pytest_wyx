@@ -9,6 +9,9 @@ class GlobalVar:
     basic_path = baseConf.base_path  # 基础路径，默认等于项目的根路径
     log_file = None  # 日志文件的路径，默认None
     log_dict = dict()  # 分模块的日志文件路径集合
+    passed_amount = 0
+    failed_amount = 0
+    run_result_dict = dict()
 
 
 # 对于每个全局变量，都需要定义get_value和set_value接口
@@ -34,3 +37,27 @@ def set_log_dict(key, value):
 
 def get_log_dict():
     return GlobalVar.log_dict
+
+
+def set_run_result_dict(key, value):
+    GlobalVar.run_result_dict[key] = value
+
+
+def get_run_result_dict():
+    return GlobalVar.run_result_dict
+
+
+def set_passed_amount(passed_amount):
+    GlobalVar.passed_amount = passed_amount
+
+
+def get_passed_amount():
+    return GlobalVar.passed_amount
+
+
+def set_failed_amount(failed_amount):
+    GlobalVar.failed_amount = failed_amount
+
+
+def get_failed_amount():
+    return GlobalVar.failed_amount

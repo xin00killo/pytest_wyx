@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Author  : wyx
 import os
-import re
 import smtplib
 import time
 from email.mime.application import MIMEApplication
@@ -10,7 +9,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from configs import global_wyx
-from configs.config_wyx import emailConf, projectConf, logConf, baseConf
+from configs.config_wyx import emailConf, projectConf, logConf
 from common.common.singleton_wyx import singleton
 from common.common.logger_wyx import log
 
@@ -101,21 +100,20 @@ class EmailWyx:
 
     # 获取本次生成的html测试报告中的summary部分
     def __add_content(self):
-        log.info('开始添加report信息到邮件content')
-        report_path = os.path.join(baseConf.base_path, r'reports/report.xml')
-        str_s = ''
-        try:
-            with open(report_path, 'rb') as f:
-                msg_body = f.read().decode('utf-8')
-            pattern = r'(<h1>report.html</h1>[\s\S]*<h2>Summary</h2>)'
-            str_s = re.sub(pattern, '', string=msg_body)
-        except Exception:
-            pass
-        print(self.__content + str_s)
-        self.__msg_obj.attach(MIMEText(self.__content + str_s, 'html', 'utf-8'))
+        log.info('开始组装并添加report信息到邮件content')
+        passed_amount = global_wyx.get_passed_amount()
+        failed_amount = global_wyx.get_failed_amount()
+        all_amount = passed_amount + failed_amount
+        result = f'\n\t总运行用例数:{all_amount},成功:{passed_amount},失败:{failed_amount},其中失败的用例包括:\n'
+        self.__content += result
+        for value in global_wyx.get_run_result_dict().values():
+            self.__content += value
+        print(f'self.__content\n{self.__content}')
+        self.__msg_obj.attach(MIMEText(self.__content, 'plain', 'utf-8'))
 
 
 emailWyx = EmailWyx()
+
 
 if __name__ == '__main__':
     # emailWyx.add_attach(r'D:\code\pytest_wyx\logs\wyxces_20200202132647.log')
