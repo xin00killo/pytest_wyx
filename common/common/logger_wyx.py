@@ -14,7 +14,7 @@ from configs.config_wyx import logConf, projectConf
 class LoggerWyx:
     def __init__(self, logger_name=logConf.logger_name):
         # 获取配置信息
-        self.__log_path = logConf.log_path
+        self.__log_path = logConf.log_path  # logs文件夹的全路径
         self.__max_bytes_each = logConf.max_bytes_each
         self.__backup_count = logConf.backup_count
         self.__fmt_logfile = logConf.fmt_logfile
@@ -29,7 +29,7 @@ class LoggerWyx:
 
         # 创建log对象
         self.__logger = logging.getLogger(self.__logger_name)
-        self.__logger.setLevel(10)
+        self.__logger.setLevel(40)
         self.__config_logger()
 
     # 提供外部获取logger的方法
@@ -39,7 +39,6 @@ class LoggerWyx:
     # 添加控制台/文件打印信息
     def __config_logger(self):
         if self.__console_log_on:  # 如果开启控制台日志
-            # print('__config_logger', self.__console_log_on)
             console = logging.StreamHandler()
             fmt_console = self.__fmt_console.replace('|', '%')
             formatter_console = logging.Formatter(fmt_console)
@@ -76,7 +75,8 @@ class LoggerWyx:
                 global_wyx.set_log_dict(self.__logger_name, log_file)
                 rt_dist_handler = RotatingFileHandler(log_file, maxBytes=self.__max_bytes_each,
                                                       backupCount=self.__backup_count, encoding='utf-8')
-                rt_file_handler = RotatingFileHandler(global_wyx.get_log_dict()[self.__project_name], maxBytes=self.__max_bytes_each,
+                rt_file_handler = RotatingFileHandler(global_wyx.get_log_dict()[self.__project_name],
+                                                      maxBytes=self.__max_bytes_each,
                                                       backupCount=self.__backup_count, encoding='utf-8')
                 fmt_logfile = self.__fmt_logfile.replace('|', '%')
                 formatter_logfile = logging.Formatter(fmt_logfile)

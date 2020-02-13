@@ -15,6 +15,7 @@ PyYAML                5.3
 requests              2.22.0
 pytest-html           2.0.1
 PyMySQL               0.9.3
+DBUtils               1.3
 ```
 ## allure安装
 配置allure环境变量  

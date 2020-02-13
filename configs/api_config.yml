@@ -1,0 +1,33 @@
+# 知识图谱模块
+zstp:
+  # 添加目标表  {}
+  zstp_add_target:
+    api: /target_tables?isFrontend=true
+    method: post
+
+  # 删除目标表 {frontend_entity_id}
+  zstp_delete_target:
+    api: /target_tables/frontend?frontendEntityId={}
+    method: delete
+
+  # 目标表状态查询（是否有映射 是否有规则等？） {frontend_entity_id}
+  zstp_select_target_status:
+    api: /target_tables/frontend?frontendEntityId={}
+    method: get
+
+  # 右键修改目标表
+  # 知识图谱-纳入计算 {target_table_id}
+  zstp_update_target:
+    api: /target_tables/{}?isFrontend=true
+    method: put
+
+  # 获取所有的目标表数据
+  zstp_select_target:
+    api: /target_tables?isFrontend=true
+    method: get
+
+target:
+  # 快速添加目标表（上传附件）
+   quick_add_target_attrs:
+     api: /target_attrs/
+     method: post

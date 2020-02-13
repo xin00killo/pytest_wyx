@@ -41,7 +41,7 @@ class RequestWyx:
                                   "multipart/form-data"]
 
     def request_wyx(self, method, api='', data=None, base_url=None,
-                    content_type=None, timeout=50, headers=None, **kwargs):
+                    content_type=None, timeout=5, headers=None, **kwargs):
         log.debug('调用request_wyx方法，传入参数：method:{}, api:{}, base_url:{}, content_type:{}, headers:{}, data:{}'.
                   format(method, api, base_url, content_type, headers, data))
         # 数据处理  包括大小写转换 和 base_url的确定

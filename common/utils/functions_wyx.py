@@ -1,7 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # @Author  : wyx
-
+import os
+import json
+from configs.config_wyx import baseConf
+from common.common.logger_wyx import log
 """
 封装一些公共函数
 ---------------------------
@@ -9,6 +12,7 @@
 get_abspath：获取绝对路径 参数 relative_path  传入相对路径，返回绝对路径
 is_json ：判断是否为标准json格式 参数 json_ , flag json_为待校验字符串，flag标识 是串儿还是文件 默认为str 0表示文件
 has_key_get_value: 返回json串儿中是否有某个key 以及 该key的值（无key时值为None）
+get_element_list: 获取字典列表中某元素的value组成的list  如：mysql查询结果字典列表
 ---------------------------
 当前已有功能类及其功能函数
 FilesOps 对路径下文件的操作，参数 relative_path 需传入相对路径
@@ -21,10 +25,6 @@ FilesOps 对路径下文件的操作，参数 relative_path 需传入相对路�
 DictOPS 封装对json串儿的一些操作, 参数 json_str , json_file 可以传入json串儿 默认为None
 """
 
-import os
-import json
-from configs.config_wyx import baseConf
-from common.common.logger_wyx import log
 
 # 获取全路径的方法
 def get_abspath(relative_path):
@@ -148,6 +148,7 @@ class FilesOps:
         :return:无
         """
         key = key.lower()
+        self.all_files = [file for file in self.all_files if not os.path.isdir(os.path.join(self.__path, file))]
         len_list = len(self.all_files)
         log.debug('总数:{}，保留:{}, 路径：{}'.format(len_list, num, self.__path))
         if num >= len_list:
@@ -192,7 +193,7 @@ def is_json(json_, flag=1):
     return True
 
 
-# 判断dict字典串儿是否存在 某个key
+# 判断dict字典串儿是否存在 某个key 并返回对应值
 def has_key_get_value(str_, key, loop=0, condition=None):
     """
     :param str_: 待查找的json串儿(dict)
@@ -204,10 +205,10 @@ def has_key_get_value(str_, key, loop=0, condition=None):
     """
     result = [False, None]
     if loop:  # 传进来的串儿可能是 str、int、dict、list  int和str可以忽略不进行拆分 continue
-        if type(str_) == dict:
+        if type(str_) == dict:  # 当当前字符串为字典时的判断方法
             if key in str_:  # 如果已经查到了，则直接返回True 否则进入循环哇~
                 result = [True, str_[key]]
-                if condition is not None:
+                if condition is not None:  # 如果定位条件不为空，则校验条件通过返回true 否则返回false
                     for k, v in condition.items():
                         if k in str_ and str_[k] == v:
                             continue
@@ -215,7 +216,7 @@ def has_key_get_value(str_, key, loop=0, condition=None):
                             result = [False, None]
                             break
                 return result
-            else:
+            else:  # 如果key没找到，就继续判断
                 for new_str in str_.values():
                     if type(new_str) in (dict, list):
                         result = has_key_get_value(str_=new_str, key=key, loop=loop-1, condition=condition)
@@ -223,7 +224,7 @@ def has_key_get_value(str_, key, loop=0, condition=None):
                             return result
                     else:
                         continue
-        elif type(str_) == list:
+        elif type(str_) == list:  # 当前字符串为列表时的判断方法
             for new_str in str_:
                 if type(new_str) in (dict, list):
                     result = has_key_get_value(str_=new_str, key=key, loop=loop - 1, condition=condition)

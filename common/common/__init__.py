@@ -4,4 +4,4 @@
 import os
 
 print('这里是 common.common 模块的 init哈~'
-      '  调用文件路径径为{}'.format(os.path.abspath(__file__)))
+      '  全路径为{}'.format(os.path.abspath(__file__)))
