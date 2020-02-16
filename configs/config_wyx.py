@@ -136,9 +136,26 @@ class EmailConf:
         return self.__cf.get('email', option)
 
 
+@singleton
+class JiraConf:
+    def __init__(self):
+        self.__cf = conf.get_conf()
+        self.user = self.get_value('user')
+        self.pwd = self.get_value('pwd')
+        self.login_api = self.get_value('login_api')
+        self.base_url = self.get_value('base_url')
+        self.project_name = self.get_value('project_name')
+        self.version_name = self.get_value('version_name')
+        self.cycle_name = self.get_value('cycle_name')
+
+    def get_value(self, option):
+        return self.__cf.get('jira', option)
+
+
 # 读取yaml文件
 class YamlConf:
-    def __init__(self, relative_path=None):
+    def __init__(self, relative_path):
+        # self.relative_path = r'configs/api_config.yml' if relative_path is None else relative_path
         self.path = os.path.join(baseConf.base_path, relative_path)
 
     # 获取yaml文件中的数据
@@ -157,6 +174,7 @@ projectConf = ProjectConf()
 logConf = LogConf()
 mysqlConf = MysqlConf()
 emailConf = EmailConf()
+jiraConf = JiraConf()
 
 
 if __name__ == '__main__':

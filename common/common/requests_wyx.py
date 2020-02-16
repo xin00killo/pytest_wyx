@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # @Author  : wyx
-from common.common.singleton_wyx import singleton
-from configs.config_wyx import projectConf
+from requests_toolbelt import MultipartEncoder
+
+from configs.config_wyx import projectConf, jiraConf
 from common.common.logger_wyx import log
 
 import re
@@ -16,7 +17,7 @@ method 必填,请求方法, 支持get post put delete
 api 默认值'',接收 二级前缀+接口名称 , 以 '/'开头
 data 默认是None  ,用于传入 get的param参数 或者 post 的 data/json 值 或者 delete的data值 等  json参数用data传入,请求头设置为"application/json"
 base_url 默认值为 config文件中配置的 [HTTP].cona_url  ,选填
-content_type 默认是None ,选填  不需要传utf-8
+content_type 默认是None ,选填  一般情况下不建议传，requests模块会自己解析
 timeout 默认值为5  ,选填
 header  默认是None ,选填，建议传入 Cookie和content-type外的请求头信息
 
@@ -30,10 +31,12 @@ header  默认是None ,选填，建议传入 Cookie和content-type外的请求�
 """
 
 
-@singleton
 class RequestWyx:
-    def __init__(self):
-        self.__base_url = projectConf.base_url
+    def __init__(self, base_url=None):
+        # 初始化 默认为项目的url
+        self.__base_url = projectConf.base_url if base_url is None else base_url
+        self.__proxies = {'http': 'http://localhost:8888', 'https': 'http://localhost:8888'}
+        # self.__proxies = None
         self.content_type_list = ["text/html", "text/plain", "text/xml", "image/gif", "image/jpeg", "image/png",
                                   "application/xhtml+xml", "application/xml", "application/atom+xml",
                                   "application/json", "application/pdf", "application/msword",
@@ -66,13 +69,14 @@ class RequestWyx:
                   'Connection': 'keep-alive'
                   }
         if content_type is not None:  # 如果存在content_type 则组装到header中
-            if 'charset' not in content_type:  # 如果没传默认字符集 才添加charset为utf-8
-                content_type = content_type + ';charset=UTF-8'
+            # if ';' not in content_type:  # 如果没传默认字符集 才添加charset为utf-8
+            #     content_type = content_type + ';charset=UTF-8'
             header['Content-Type'] = content_type
         if headers is not None:
             header.update(headers)
         r_dict = {
             'headers': header,
+            'proxies': self.__proxies,
             'verify': False,
             'timeout': timeout
         }
@@ -105,19 +109,23 @@ class RequestWyx:
             log.error('request get请求异常：{}'.format(msg))
             return False
         else:
-            log.info('res')
+            log.info(res)
             return res if self.__response_check(res) else False
 
     def __post_(self, url, data, **kwargs):
         log.info("开始执行request方法：\n\tpost url:{}\n\tdata:{}\n\tkwargs:{}".format(url, data, kwargs))
-        res = False
         try:
             if 'Content-Type' in kwargs['headers'].keys():
-                # log.debug("\n\t |\n\t if 'Content-Type' in kwargs['headers'].keys(): |\n\t")
-                if 'json' in kwargs['headers']['Content-Type'] and data is not None:
-                    # log.debug("\n\t |\n\t if 'json' in kwargs['headers']['Content-Type'] and data is not None: |\n\t")
+                if 'application/json' in kwargs['headers']['Content-Type'] and data is not None:
                     res = requests.post(url=url, json=data, **kwargs)
+                elif 'multipart/form-data' in kwargs['headers']['Content-Type'] and data is not None:
+                    m = MultipartEncoder(data)
+                    kwargs['headers']['Content-Type'] = m.content_type
+                    res = requests.post(url=url, data=m, **kwargs)
+                else:
+                    res = requests.post(url=url, data=data, **kwargs)
             else:
+                log.warning('无Content-Type，执行默认方法~')
                 res = requests.post(url=url, data=data, **kwargs)
         except Exception as msg:
             log.error('request post请求异常：{}'.format(msg))
@@ -138,7 +146,17 @@ class RequestWyx:
     def __put_(self, url, data, **kwargs):
         log.info("开始执行request方法：\n\tput url:{}\n\tdata:{}\n\tkwargs:{}".format(url, data, kwargs))
         try:
-            res = requests.put(url=url, data=data, **kwargs)
+            if 'Content-Type' in kwargs['headers'].keys():
+                if 'application/json' in kwargs['headers']['Content-Type'] and data is not None:
+                    res = requests.put(url=url, json=data, **kwargs)
+                elif 'multipart/form-data' in kwargs['headers']['Content-Type'] and data is not None:
+                    m = MultipartEncoder(data)
+                    kwargs['headers']['Content-Type'] = m.content_type
+                    res = requests.put(url=url, data=m, **kwargs)
+                else:
+                    res = requests.put(url=url, data=data, **kwargs)
+            else:
+                res = requests.put(url=url, data=data, **kwargs)
         except Exception as msg:
             log.error('request put请求异常：{}'.format(msg))
             return False
@@ -185,9 +203,9 @@ class RequestWyx:
                 if value == '':
                     log.warning('content_type 为 "" ,可能会引发错误')
                 else:
-                    value = value.split(';')[0] if re.search('charset', value) else value
+                    value = value.split(';')[0] if re.search(';', value) else value
                     if value not in self.content_type_list:
-                        log.error('content_type:{} 不在已知道列表,当前程序无法解析!!!'.format(value))
+                        log.error('content_type:{} 不在已知列表,当前程序无法解析!!!'.format(value))
                         return True
         log.info('入参数据校验完成')
         return False
@@ -209,7 +227,7 @@ class RequestWyx:
             return True
 
 
-requestWyx = RequestWyx()
+requestWyx = RequestWyx(projectConf.base_url)
 if __name__ == '__main__':
     wyx = RequestWyx()
     # url = projectConf.base_url
